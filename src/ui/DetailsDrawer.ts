@@ -1,6 +1,6 @@
 import type { PhotoItem } from "../lib/photo-item";
 import { formatDateLabel, isLowConfidenceDateSource } from "../utils/date";
-import { drawSquareToCanvas, isSquareLike } from "../utils/crop";
+import { drawSquareToCanvas, isSquareLike, scaleCropToSize } from "../utils/crop";
 import { loadBitmap, decodeImageElement } from "../utils/image";
 import type { TimeZoneSetting } from "../utils/timezone";
 import { resolveTimeZone } from "../utils/timezone";
@@ -294,7 +294,11 @@ export function renderDetailsDrawer(
     const bitmap = await loadBitmap(item.file, { maxSide: 1280 });
     if (bitmap) {
       const mode = item.cropIsManual ? "cover" : isSquareLike(bitmap.width, bitmap.height) ? "contain" : item.cropMode;
-      drawSquareToCanvas(canvas, bitmap, item.crop, mode, bitmap.width, bitmap.height);
+      const crop =
+        item.sourceWidth && item.sourceHeight
+          ? scaleCropToSize(item.crop, { width: item.sourceWidth, height: item.sourceHeight }, { width: bitmap.width, height: bitmap.height })
+          : item.crop;
+      drawSquareToCanvas(canvas, bitmap, crop, mode, bitmap.width, bitmap.height);
       bitmap.close();
       skeleton.remove();
       return;

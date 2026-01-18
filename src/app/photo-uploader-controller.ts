@@ -740,17 +740,19 @@ export function initPhotoUploader(root: HTMLElement) {
     if (!afterDate) return;
     const result = await computeAutoCropForFile(afterDate.file, afterDate.url);
     if ((itemRevision.get(id) ?? 0) !== rev) return;
-    if (result) {
-      items = items.map((existing) => {
-        if (existing.id !== id) return existing;
-        if (existing.cropIsManual) return existing;
-        return {
-          ...existing,
-          crop: result.crop,
-          cropMode: result.mode,
-          cropIsManual: false,
-          autoCropConfidence: result.confidence
-        };
+      if (result) {
+        items = items.map((existing) => {
+          if (existing.id !== id) return existing;
+          if (existing.cropIsManual) return existing;
+          return {
+            ...existing,
+            sourceWidth: result.sourceWidth,
+            sourceHeight: result.sourceHeight,
+            crop: result.crop,
+            cropMode: result.mode,
+            cropIsManual: false,
+            autoCropConfidence: result.confidence
+          };
       });
       render();
     }
@@ -836,6 +838,8 @@ export function initPhotoUploader(root: HTMLElement) {
         if (existing.cropIsManual) return existing;
         return {
           ...existing,
+          sourceWidth: result.sourceWidth,
+          sourceHeight: result.sourceHeight,
           crop: result.crop,
           cropMode: result.mode,
           cropIsManual: false,
@@ -1113,11 +1117,15 @@ export function initPhotoUploader(root: HTMLElement) {
     const rev = bumpRevision(id);
     const nextCrop = result.crop;
     const nextConfidence = result.autoCropConfidence;
+    const sourceWidth = result.sourceWidth;
+    const sourceHeight = result.sourceHeight;
     items = items.map((existing) => {
       if (existing.id !== id) return existing;
       if (existing.thumbUrl) revokeObjectURL(existing.thumbUrl);
       return {
         ...existing,
+        sourceWidth,
+        sourceHeight,
         crop: nextCrop,
         cropMode: "cover",
         cropIsManual: true,

@@ -1,6 +1,6 @@
 import type { PhotoItem } from "../lib/photo-item";
 import { formatDateLabel } from "./date";
-import { drawSquareToContext, isSquareLike } from "./crop";
+import { drawSquareToContext, isSquareLike, scaleCropToSize } from "./crop";
 import { loadBitmap } from "./image";
 import { createObjectURL, revokeObjectURL } from "./object-url";
 import type { TimeZoneSetting } from "./timezone";
@@ -165,7 +165,11 @@ export async function exportGif(items: PhotoItem[], options: ExportGifOptions) {
         : isSquareLike(bitmap.width, bitmap.height)
           ? "contain"
           : item.cropMode;
-      drawSquareToContext(ctx, bitmap, item.crop, mode, bitmap.width, bitmap.height, 0, 0, size);
+      const crop =
+        item.sourceWidth && item.sourceHeight
+          ? scaleCropToSize(item.crop, { width: item.sourceWidth, height: item.sourceHeight }, { width: bitmap.width, height: bitmap.height })
+          : item.crop;
+      drawSquareToContext(ctx, bitmap, crop, mode, bitmap.width, bitmap.height, 0, 0, size);
       bitmap.close();
     }
 

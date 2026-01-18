@@ -42,6 +42,19 @@ export function ensureValidSquareCrop(crop: PhotoCrop, width: number, height: nu
   return { x, y, size: crop.size };
 }
 
+export function scaleCropToSize(
+  crop: PhotoCrop,
+  from: { width: number; height: number },
+  to: { width: number; height: number }
+): PhotoCrop {
+  if (!(from.width > 0 && from.height > 0 && to.width > 0 && to.height > 0)) return crop;
+  const scaleX = to.width / from.width;
+  const scaleY = to.height / from.height;
+  const scale = Math.min(scaleX, scaleY);
+  if (!Number.isFinite(scale) || scale <= 0) return crop;
+  return { x: crop.x * scale, y: crop.y * scale, size: crop.size * scale };
+}
+
 export function drawSquareToCanvas(
   canvas: HTMLCanvasElement,
   image: CanvasImageSource,

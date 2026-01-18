@@ -23,6 +23,8 @@ export type PhotoItem = {
   file: File;
   url: string;
   thumbUrl?: string;
+  sourceWidth?: number;
+  sourceHeight?: number;
   importedAt: number;
   exifDate?: Date;
   fallbackDate?: Date;

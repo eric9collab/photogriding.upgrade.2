@@ -13,6 +13,8 @@ export type CropEditorOptions = {
 export type CropEditorResult = {
   crop: PhotoCrop;
   autoCropConfidence: number;
+  sourceWidth: number;
+  sourceHeight: number;
 };
 
 export type CropEditorController = {
@@ -143,8 +145,8 @@ export function mountCropEditor(): CropEditorController {
 
   cancel.addEventListener("click", () => closeWith(null));
   save.addEventListener("click", () => {
-    if (!working) return closeWith(null);
-    closeWith({ crop: working, autoCropConfidence: 1 });
+    if (!working || !imageSize) return closeWith(null);
+    closeWith({ crop: working, autoCropConfidence: 1, sourceWidth: imageSize.width, sourceHeight: imageSize.height });
   });
   recenter.addEventListener("click", () => {
     if (!imageSize) return;
