@@ -478,12 +478,26 @@ export default function PhotoUploaderIsland() {
 
           <div className="mt-4 grid gap-4 md:grid-cols-[1fr_220px]">
             <div className="rounded-panel bg-black/30 p-3 ring-1 ring-white/10">
-              <canvas
-                data-crop-canvas
-                width="768"
-                height="768"
-                className="aspect-square h-auto w-full touch-none rounded-lg bg-zinc-900"
-              />
+              <div className="relative">
+                <canvas
+                  data-crop-canvas
+                  width="768"
+                  height="768"
+                  className="aspect-square h-auto w-full touch-none rounded-lg bg-zinc-900"
+                />
+                {import.meta.env.DEV ? (
+                  <div
+                    data-crop-debug-overlay
+                    className="pointer-events-none absolute inset-0 hidden rounded-lg"
+                  >
+                    <div className="absolute left-1/3 top-0 h-full w-px bg-white/20"></div>
+                    <div className="absolute left-2/3 top-0 h-full w-px bg-white/20"></div>
+                    <div className="absolute top-1/3 left-0 h-px w-full bg-white/20"></div>
+                    <div className="absolute top-2/3 left-0 h-px w-full bg-white/20"></div>
+                    <div className="absolute left-1/2 top-1/2 h-2 w-2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-emerald-300/80 ring-2 ring-black/40"></div>
+                  </div>
+                ) : null}
+              </div>
             </div>
 
             <div className="grid content-start gap-3">
@@ -491,6 +505,13 @@ export default function PhotoUploaderIsland() {
                 <span className="text-xs text-zinc-300">縮放</span>
                 <input data-crop-zoom type="range" min="1" max="4" step="0.01" className="w-full" />
               </label>
+
+              {import.meta.env.DEV ? (
+                <label className="flex items-center justify-between gap-3 rounded-md bg-white/5 px-3 py-2 text-xs text-zinc-200 ring-1 ring-white/10">
+                  <span>顯示裁切參考線</span>
+                  <input data-crop-debug-toggle type="checkbox" className="h-4 w-4 accent-emerald-400" />
+                </label>
+              ) : null}
 
               <button
                 type="button"
