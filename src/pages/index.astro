@@ -1,0 +1,32 @@
+---
+import "../styles/global.css";
+import PhotoUploaderIsland from "../components/PhotoUploaderIsland.tsx";
+import HydrationTest from "../components/HydrationTest.tsx";
+
+---
+
+<html lang="zh-Hant-TW" class="h-full">
+	<head>
+		<meta charset="utf-8" />
+		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+		<meta name="viewport" content="width=device-width" />
+		<meta name="generator" content={Astro.generator} />
+		<title>PhotoGriding</title>
+	</head>
+	<body class="min-h-dvh bg-zinc-950 text-zinc-50 antialiased">
+		<HydrationTest client:load />
+		<main class="mx-auto flex min-h-dvh max-w-5xl flex-col gap-10 px-6 py-12">
+			<header class="flex flex-col gap-3">
+				<p class="text-sm text-zinc-300">一次性合成 · 不建立相簿 · 不寫入 localStorage</p>
+				<h1 class="text-balance text-3xl font-semibold tracking-tight sm:text-4xl">
+					PhotoGriding
+				</h1>
+				<p class="max-w-2xl text-pretty text-zinc-300">
+					這個專案只做單頁的一次性圖片合成流程；之後需要的少量自訂樣式，會以 Tailwind 設定擴充為主。
+					</p>
+			</header>
+
+			<PhotoUploaderIsland client:load />
+		</main>
+	</body>
+</html>
