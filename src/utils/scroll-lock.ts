@@ -62,10 +62,9 @@ function onTouchMove(e: TouchEvent) {
     return;
   }
 
-  if (!isScrollable(allowed)) {
-    e.preventDefault();
-    return;
-  }
+  // Allowed region is permitted to handle touch gestures itself (e.g. crop canvas, date input).
+  // We only intervene to stop scroll chaining / rubber-banding for scrollable regions.
+  if (!isScrollable(allowed)) return;
 
   const deltaY = touch.clientY - touchStartY;
   const maxScrollTop = allowed.scrollHeight - allowed.clientHeight;

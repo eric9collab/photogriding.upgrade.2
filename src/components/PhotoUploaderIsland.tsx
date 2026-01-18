@@ -482,7 +482,7 @@ export default function PhotoUploaderIsland() {
                 data-crop-canvas
                 width="768"
                 height="768"
-                className="aspect-square h-auto w-full rounded-lg bg-zinc-900"
+                className="aspect-square h-auto w-full touch-none rounded-lg bg-zinc-900"
               />
             </div>
 

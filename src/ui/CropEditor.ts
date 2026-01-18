@@ -45,10 +45,19 @@ export function mountCropEditor(): CropEditorController {
   let pointerStart: { x: number; y: number; w: number; h: number } | null = null;
   let cropStart: PhotoCrop | null = null;
 
+  let touchMode: "none" | "pan" | "pinch" = "none";
+  let touchStartCrop: PhotoCrop | null = null;
+  let touchStartDist = 0;
+  let touchStartMid: { x: number; y: number; w: number } | null = null;
+
   function cleanup() {
     pointerDown = false;
     pointerStart = null;
     cropStart = null;
+    touchMode = "none";
+    touchStartCrop = null;
+    touchStartDist = 0;
+    touchStartMid = null;
     working = null;
     imageSize = null;
     workingConfidence = 0;
@@ -87,6 +96,25 @@ export function mountCropEditor(): CropEditorController {
     return { x: e.clientX - rect.left, y: e.clientY - rect.top, w: rect.width, h: rect.height };
   }
 
+  function touchToLocal(t: Touch) {
+    const rect = canvas.getBoundingClientRect();
+    return { x: t.clientX - rect.left, y: t.clientY - rect.top, w: rect.width, h: rect.height };
+  }
+
+  function dist(a: { x: number; y: number }, b: { x: number; y: number }) {
+    const dx = a.x - b.x;
+    const dy = a.y - b.y;
+    return Math.hypot(dx, dy);
+  }
+
+  function mid(a: { x: number; y: number }, b: { x: number; y: number }) {
+    return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+  }
+
+  function clamp(n: number, min: number, max: number) {
+    return Math.min(max, Math.max(min, n));
+  }
+
   cancel.addEventListener("click", () => closeWith(null));
   save.addEventListener("click", () => {
     if (!working) return closeWith(null);
@@ -112,6 +140,7 @@ export function mountCropEditor(): CropEditorController {
   });
 
   canvas.addEventListener("pointerdown", (e) => {
+    if (e.pointerType === "touch") return;
     if (!working) return;
     pointerDown = true;
     pointerStart = canvasToLocal(e);
@@ -119,6 +148,7 @@ export function mountCropEditor(): CropEditorController {
     canvas.setPointerCapture(e.pointerId);
   });
   canvas.addEventListener("pointermove", (e) => {
+    if (e.pointerType === "touch") return;
     if (!pointerDown || !pointerStart || !cropStart || !imageSize) return;
     const pos = canvasToLocal(e);
     const dx = pos.x - pointerStart.x;
@@ -137,6 +167,118 @@ export function mountCropEditor(): CropEditorController {
     pointerStart = null;
     cropStart = null;
   });
+
+  canvas.addEventListener(
+    "touchstart",
+    (e) => {
+      if (!working) return;
+      if (!imageSize) return;
+      if (e.touches.length === 0) return;
+      e.preventDefault();
+
+      touchStartCrop = { ...working };
+      const t0 = e.touches[0];
+      if (!t0) return;
+      const p0 = touchToLocal(t0);
+
+      if (e.touches.length === 1) {
+        touchMode = "pan";
+        touchStartMid = { x: p0.x, y: p0.y, w: p0.w };
+        return;
+      }
+
+      const t1 = e.touches[1];
+      if (!t1) return;
+      const p1 = touchToLocal(t1);
+      touchMode = "pinch";
+      touchStartDist = dist(p0, p1);
+      const m = mid(p0, p1);
+      touchStartMid = { x: m.x, y: m.y, w: p0.w };
+    },
+    { passive: false }
+  );
+
+  canvas.addEventListener(
+    "touchmove",
+    (e) => {
+      if (!working || !imageSize || !touchStartCrop || !touchStartMid) return;
+      if (e.touches.length === 0) return;
+      e.preventDefault();
+
+      const minSide = Math.min(imageSize.width, imageSize.height);
+      const minSize = Math.max(32, minSide / 4);
+      const maxSize = minSide;
+
+      if (touchMode === "pan" && e.touches.length === 1) {
+        const t0 = e.touches[0];
+        if (!t0) return;
+        const p0 = touchToLocal(t0);
+        const dx = p0.x - touchStartMid.x;
+        const dy = p0.y - touchStartMid.y;
+        const scale = touchStartCrop.size / Math.max(1, touchStartMid.w);
+        working = { x: touchStartCrop.x + dx * scale, y: touchStartCrop.y + dy * scale, size: touchStartCrop.size };
+        render();
+        return;
+      }
+
+      if (e.touches.length < 2) return;
+      const t0 = e.touches[0];
+      const t1 = e.touches[1];
+      if (!t0 || !t1) return;
+      const p0 = touchToLocal(t0);
+      const p1 = touchToLocal(t1);
+      const currentDist = dist(p0, p1);
+      const scaleFactor = touchStartDist > 0 ? currentDist / touchStartDist : 1;
+      const nextSize = clamp(touchStartCrop.size / Math.max(0.001, scaleFactor), minSize, maxSize);
+
+      const startCenter = { x: touchStartCrop.x + touchStartCrop.size / 2, y: touchStartCrop.y + touchStartCrop.size / 2 };
+      const currentMid = mid(p0, p1);
+      const mdx = currentMid.x - touchStartMid.x;
+      const mdy = currentMid.y - touchStartMid.y;
+      const startScale = touchStartCrop.size / Math.max(1, touchStartMid.w);
+      const nextCenter = { x: startCenter.x + mdx * startScale, y: startCenter.y + mdy * startScale };
+
+      working = { x: nextCenter.x - nextSize / 2, y: nextCenter.y - nextSize / 2, size: nextSize };
+      render();
+    },
+    { passive: false }
+  );
+
+  canvas.addEventListener(
+    "touchend",
+    (e) => {
+      if (e.touches.length === 0) {
+        touchMode = "none";
+        touchStartCrop = null;
+        touchStartDist = 0;
+        touchStartMid = null;
+        return;
+      }
+
+      // If we lifted one finger during pinch, continue as pan with the remaining finger.
+      if (e.touches.length === 1 && working) {
+        const t0 = e.touches[0];
+        if (!t0) return;
+        const p0 = touchToLocal(t0);
+        touchMode = "pan";
+        touchStartCrop = { ...working };
+        touchStartMid = { x: p0.x, y: p0.y, w: p0.w };
+        return;
+      }
+    },
+    { passive: false }
+  );
+
+  canvas.addEventListener(
+    "touchcancel",
+    () => {
+      touchMode = "none";
+      touchStartCrop = null;
+      touchStartDist = 0;
+      touchStartMid = null;
+    },
+    { passive: true }
+  );
 
   modal.addEventListener("click", (e) => {
     if (e.target === modal) closeWith(null);
@@ -160,7 +302,7 @@ export function mountCropEditor(): CropEditorController {
       modal.classList.add("flex");
       modal.setAttribute("aria-hidden", "false");
       unlockScroll?.();
-      unlockScroll = lockScroll();
+      unlockScroll = lockScroll({ allowScrollWithin: [modal] });
       render();
 
       return await new Promise<CropEditorResult | null>((resolve) => {

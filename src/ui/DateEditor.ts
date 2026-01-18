@@ -84,7 +84,7 @@ export function mountDateEditor(): DateEditorController {
       modal.classList.add("flex");
       modal.setAttribute("aria-hidden", "false");
       unlockScroll?.();
-      unlockScroll = lockScroll();
+      unlockScroll = lockScroll({ allowScrollWithin: [modal] });
       setTimeout(() => modalDate.focus(), 0);
 
       return await new Promise<Date | null>((resolve) => {
